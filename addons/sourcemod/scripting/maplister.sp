@@ -1,7 +1,20 @@
 
 #include <sourcemod>
 
+#define PLUGIN_VERSION "1.0.0"
+
+
+public Plugin myinfo =
+{
+	name = "AbNeR Map Lister",
+	author = "abnerfs",
+	description = "Maplister that supports Workshop maps",
+	version = PLUGIN_VERSION,
+	url = "https://github.com/abnerfs/"
+}
+
 public void OnPluginStart() {
+    CreateConVar("abner_maplister_version", PLUGIN_VERSION, "Plugin Version", FCVAR_NOTIFY|FCVAR_REPLICATED);
     RegAdminCmd("listmaps", Command_ListMaps, ADMFLAG_ROOT);
 }
 
@@ -24,6 +37,8 @@ public Action Command_ListMaps(int client, int args) {
         char path[PLATFORM_MAX_PATH];
         GetCmdArg(1, path, sizeof(path));
         WriteMapFile(path, list);
+
+        ReplyToCommand(client, "Sucessfully saved file %s", path);
     }
     
 
@@ -42,7 +57,6 @@ WriteMapFile(char[] path, ArrayList list) {
         WriteFileLine(file, strMap);
     }
     CloseHandle(file);
-    PrintToServer("Path %s", path);
 }
 
 
