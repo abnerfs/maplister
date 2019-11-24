@@ -15,33 +15,59 @@ public Plugin myinfo =
 
 public void OnPluginStart() {
     CreateConVar("abner_maplister_version", PLUGIN_VERSION, "Plugin Version", FCVAR_NOTIFY|FCVAR_REPLICATED);
-    RegAdminCmd("listmaps", Command_ListMaps, ADMFLAG_ROOT);
+    RegAdminCmd("sm_maplist", Command_ListMaps, ADMFLAG_GENERIC, "Prints a map list satisfying the optionally specified filter to the user that executed the command");
+    RegAdminCmd("sm_writemaplist", Command_WriteMapList, ADMFLAG_GENERIC, "Outputs a map list satisfying the optionally specified filter to the file specified.");
 }
 
-public Action Command_ListMaps(int client, int args) {
-    ArrayList list = ReadFolder("maps");
+
+stock void ListMaps(int client, const char[] filter, char[] path) {
+    bool writeFile = !StrEqual(path, "");
+
+    PrintToServer("Filter %s", filter);
+    ArrayList list = MapLister("maps", filter);
 
     for(int i = 0; i < list.Length;i++) {
         char strMap[500];
         list.GetString(i, strMap, sizeof(strMap));
-        if(args > 0)
+        if(writeFile)
             continue;
 
-        if(client == 0)
-            PrintToServer(strMap);
-        else
-            PrintToConsole(i, strMap);
+        ReplyToCommand(client, strMap);
     }
 
-    if(args > 0) {
-        char path[PLATFORM_MAX_PATH];
-        GetCmdArg(1, path, sizeof(path));
+    if(writeFile) {
         WriteMapFile(path, list);
-
         ReplyToCommand(client, "Sucessfully saved file %s", path);
     }
-    
+}
 
+public Action Command_ListMaps(int client, int args) {
+    char szFilter[30];
+    if(args > 0) {
+        GetCmdArg(1, szFilter, sizeof(szFilter));
+    }
+
+    ListMaps(client, szFilter, "");
+
+}
+
+
+public Action Command_WriteMapList(int client, int args) {
+   
+    char path[PLATFORM_MAX_PATH];
+    GetCmdArg(1, path, sizeof(path));
+
+    if(args < 1) {
+        ReplyToCommand(client, "sm_writemaplist <Path> <filter: optional>");
+    }
+
+    char szFilter[30];
+    if(args > 1) {
+        GetCmdArg(2, szFilter, sizeof(szFilter));
+    }
+
+    ListMaps(client, szFilter, path);
+    ReplyToCommand(client, "Sucessfully saved file %s", path);
     return Plugin_Handled;
 }
 
@@ -61,7 +87,7 @@ WriteMapFile(char[] path, ArrayList list) {
 
 
 
-public ArrayList ReadFolder(const char[] path) {
+public ArrayList MapLister(const char[] path, const char[] szFilter) {
 
     ArrayList list = new ArrayList(PLATFORM_MAX_PATH);
 
@@ -77,7 +103,7 @@ public ArrayList ReadFolder(const char[] path) {
             continue;
 
         if(typeNext == FileType_File) {
-            if(StrContains(mapBuffer, ".bsp") > -1){
+            if(StrContains(mapBuffer, ".bsp") > -1 && (StrEqual(szFilter, "") || StrContains(mapBuffer, szFilter) == 0 ) ){
                 if(!StrEqual(path, "maps")) {
                     Format(mapBuffer, sizeof(mapBuffer), "%s/%s", path, mapBuffer);
                 }
@@ -89,7 +115,7 @@ public ArrayList ReadFolder(const char[] path) {
         }
         else if(typeNext == FileType_Directory) {
             Format(mapBuffer, sizeof(mapBuffer), "%s/%s", path, mapBuffer);
-            ArrayList listArr = ReadFolder(mapBuffer);
+            ArrayList listArr = MapLister(mapBuffer, szFilter);
             for(int i = 0; i < listArr.Length; i++) {
                 char strMap[PLATFORM_MAX_PATH];
                 listArr.GetString(i, strMap, sizeof(strMap));
