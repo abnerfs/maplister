@@ -7,7 +7,7 @@ this plugin is useful to write maplists automatically with simple commands (writ
 
 # Commands
 - **sm_maplist <filter: optional>:** Prints a map list satisfying the optionally specified filter to the user that executed the command.
-- **sm_writemaplist <Output file> <filter: optional>:** Outputs a map list satisfying the optionally specified filter to the file specified. 
+- **sm_writemaplist < file> <filter: optional>:** Outputs a map list satisfying the optionally specified filter to the file specified. 
 
 # Support
 - [Open an issue](https://github.com/abnerfs/maplister/issues "Support")
